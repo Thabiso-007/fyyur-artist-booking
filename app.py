@@ -364,8 +364,33 @@ def edit_artist(artist_id):
 def edit_artist_submission(artist_id):
   # TODO: take values from the form submitted, and update existing
   # artist record with ID <artist_id> using the new attributes
+  form = ArtistForm()
+  error=False
+  artist = Artist.query.get(artist_id)
+  artist.name = form.name.data
+  artist.city = form.city.data
+  artist.state = form.state.data
+  artist.phone = form.phone.data
+  artist.facebook_link = form.facebook_link.data
+  #artist.seeking_talent = request.form.seeking_talent.data
+  artist.genres = form.genres.data
+  artist.image_link = form.image_link.data
+  artist.website_link = form.website_link.data
+  artist.seeking_description = form.seeking_description.data
 
-  return redirect(url_for('show_artist', artist_id=artist_id))
+  try:
+    db.session.commit()
+    flash("You have updated artist, " + artist.name + " successfully.")
+  except:
+    db.session.rollback()
+    error=True
+    flash("There was an error trying to updated artist, " + artist.name + ".")
+  finally:
+    db.session.close()
+  if error:
+    abort(500)
+  else:
+    return redirect(url_for('show_artist', artist_id=artist_id))
 
 @app.route('/venues/<int:venue_id>/edit', methods=['GET'])
 def edit_venue(venue_id):
@@ -389,37 +414,37 @@ def edit_venue(venue_id):
   except:
     return render_template('errors/404.html')
   
-@app.route('/venues/<int:venue_id>/edit', methods=['POST'])
+@app.route('/artists/<int:artist_id>/edit', methods=['POST'])
 def edit_venue_submission(venue_id):
   # TODO: take values from the form submitted, and update existing
   # venue record with ID <venue_id> using the new attributes
   form = VenueForm()
   error=False
-  venue_update = Venue.query.get_or_404(venue_id)
-  if request.method == "POST":
-    venue_update.name = request.form['name']
-    venue_update.genres = request.form['genres']
-    venue_update.address = request.form['address']
-    venue_update.city = request.form['city']
-    venue_update.state = request.form['state']
-    venue_update.phone = request.form['phone']
-    venue_update.website_link = request.form['website_link']
-    venue_update.facebook_link = request.form['facebook_link']
-    venue_update.image_link = request.form['image_link']
-    venue_update.seeking_talent = request.form['seeking_talent']
-    venue_update.seeking_description = request.form['seeking_description']
-    try:
-      db.session.commit()
-      flash('Data updated successfully')
-    except:
-      error=True
-      return render_template('errors/404.html')
-    finally:
-      db.session.close()
-    if error:
-      abort(500)
-    else:
-      return redirect(url_for('show_venue', venue_id=venue_id))
+  venue_update = Venue.query.get(venue_id)
+  venue_update.name = form.name.data
+  venue_update.genres = form.genres.data
+  venue_update.address = form.address.data
+  venue_update.city = form.city.data
+  venue_update.state = form.state.data
+  venue_update.phone = form.phone.data
+  venue_update.website_link = form.website_link.data
+  venue_update.facebook_link = form.facebook_link.data
+  venue_update.image_link = form.image_link.data
+  venue_update.seeking_talent = form.seeking_talent.data
+  venue_update.seeking_description = form.seeking_description
+  try:
+    db.session.commit()
+    flash("You have updated venue, " + venue_update.name + " successfully.")
+  except:
+    db.session.rollback()
+    error=True
+    flash("There was an error trying to updated venue, " + venue_update.name + ".")
+  finally:
+    db.session.close()
+  if error:
+    abort(500)
+  else:
+    return redirect(url_for('show_venue', venue_id=venue_id))
   
 #  Create Artist
 #  ----------------------------------------------------------------
