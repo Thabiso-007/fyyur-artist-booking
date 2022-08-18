@@ -249,38 +249,25 @@ def create_venue_submission():
   else:
     return render_template('pages/home.html')
 
-@app.route('/venues/<venue_id>', methods=['DELETE'])
+@app.route('/venues/<int:venue_id>', methods=['DELETE'])
 def delete_venue(venue_id):
   # TODO: Complete this endpoint for taking a venue_id, and using
   # SQLAlchemy ORM to delete a record. Handle cases where the session commit could fail.
   remove_venue = Venue.query.get(venue_id)
-  form=VenueForm()
-  name=None
   error=False
   try:
     db.session.delete(remove_venue)
     db.session.commit()
-
-    # return a flash message
-    flash("Venue was deleted successfully!")
-
-    venue = Venue.query.order_by(Venue.id)
-    return render_template("pages/home.html", 
-    form=form, 
-    name=name,    
-    venue=venue
-    )
   except:
     db.session.rollback()
     error=True
-    flash("Venue was not deleted, try again!!!")
-    return render_template("pages/home.html", 
-    form=form, 
-    name=name,    
-    venue=venue
-    )
+    flash("There was a problem deleting the venue.")
   finally:
     db.session.close()
+  if error:
+    abort(500)
+  else:
+    return redirect(url_for('venues'))
 
 #  Artists
 #  ----------------------------------------------------------------
