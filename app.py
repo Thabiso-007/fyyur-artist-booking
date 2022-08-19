@@ -17,6 +17,11 @@ from flask_migrate import Migrate
 from datetime import date
 import collections
 collections.Callable = collections.abc.Callable
+
+#----------------------------------------------------------------------------#
+# Models
+#----------------------------------------------------------------------------#
+
 from models import db, Artist, Venue, Show
 #----------------------------------------------------------------------------#
 # App Config.
@@ -86,7 +91,7 @@ def search_venues():
   # TODO: implement search on venues with partial string search. Ensure it is case-insensitive.
   # seach for Hop should return "The Musical Hop".
   # search for "Music" should return "The Musical Hop" and "Park Square Live Music & Coffee"
-  results = Venue.query.filter(Venue.name.ilike('%{}%'.format(request.form['search_term']))).all()
+  results = Venue.query.filter(Venue.name.ilike(request.form['search_term'])).all()
   response={
     "count": len(results),
     "data": []
@@ -106,39 +111,47 @@ def show_venue(venue_id):
   # TODO: replace with real venue data from the venues table, using venue_id
   
   venue = Venue.query.get(venue_id)
-  try:
-    past_shows = []
-    upcoming_shows = []
-    shows = venue.shows
-    for show in shows:
-      show_info ={
-        "artist_id": show.artist_id,
-        "artist_name": show.artist.name,
-        "artist_image_link": show.artist.image_link,
-        "start_time": str(show.start_time)
-      }
-      if(show.upcoming):
-        upcoming_shows.append(show_info)
-      else:
-        past_shows.append(show_info)
 
-    data={
-      "id": venue.id,
-      "name": venue.name,
-      "address": venue.address,
-      "city": venue.city,
-      "state": venue.state,
-      "phone": venue.phone,
-      "website": venue.website_link,
-      "facebook_link": venue.facebook_link,
-      "seeking_talent": venue.seeking_talent,
-      "seeking_description": venue.seeking_description,
-      "image_link": venue.image_link,
-      "past_shows": past_shows,
-      "upcoming_shows": upcoming_shows,
-      "past_shows_count": len(past_shows),
-      "upcoming_shows_count": len(upcoming_shows)
-   }
+  upcoming_shows_query = db.session.query(Show).join(Artist).filter(Show.venue_id==venue_id).filter(Show.start_time>datetime.now()).all()
+  upcoming_shows = []
+
+  past_shows_query = db.session.query(Show).join(Artist).filter(Show.venue_id==venue_id).filter(Show.start_time<datetime.now()).all()
+  past_shows = []
+
+  for show in past_shows_query:
+    past_shows.append({
+      "artist_id": show.artist_id,
+      "artist_name": show.artist.name,
+      "artist_image_link": show.artist.image_link,
+      "start_time": show.start_time.strftime('%Y-%m-%d %H:%M:%S')
+    })
+
+  for show in upcoming_shows_query:
+    upcoming_shows.append({
+      "artist_id": show.artist_id,
+      "artist_name": show.artist.name,
+      "artist_image_link": show.artist.image_link,
+      "start_time": show.start_time.strftime("%Y-%m-%d %H:%M:%S")    
+    })
+
+  data = {
+    "name": venue.name,
+    "address": venue.address,
+    "city": venue.city,
+    "state": venue.state,
+    "phone": venue.phone,
+    "website": venue.website_link,
+    "facebook_link": venue.facebook_link,
+    "seeking_talent": venue.seeking_talent,
+    "seeking_description": venue.seeking_description,
+    "image_link": venue.image_link,
+    "past_shows": past_shows,
+    "upcoming_shows": upcoming_shows,
+    "past_shows_count": len(past_shows),
+    "upcoming_shows_count": len(upcoming_shows),
+  }
+
+  try:
     return render_template('pages/show_venue.html', venue=data)
   except:
     return render_template('errors/404.html')
@@ -220,7 +233,7 @@ def search_artists():
   # TODO: implement search on artists with partial string search. Ensure it is case-insensitive.
   # seach for "A" should return "Guns N Petals", "Matt Quevado", and "The Wild Sax Band".
   # search for "band" should return "The Wild Sax Band".
-  results = Artist.query.filter(Artist.name.ilike('%{}%'.format(request.form['search_term']))).all()
+  results = Artist.query.filter(Artist.name.ilike(request.form['search_term'])).all()
 
   response={
     "count": len(results),
@@ -256,9 +269,7 @@ def show_artist(artist_id):
       upcoming_shows.append(data)
   if artist:
     data = {
-      "id": artist_id,
       "name": artist.name,
-      #"genres": [genre.name for genre in artist.genres],
       "city": artist.city,
       "state": artist.state,
       "phone": artist.phone,
